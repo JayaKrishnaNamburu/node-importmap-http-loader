@@ -1,5 +1,5 @@
 import { existsSync, writeFileSync } from "node:fs";
-import { ensureFileSync } from "src/utils";
+import { ensureFileSync, getLastPart, getVersion } from "src/utils";
 import { logger } from "src/logger";
 import { isDebuggingEnabled } from "./config";
 
@@ -14,13 +14,25 @@ import { isDebuggingEnabled } from "./config";
 
 const log = logger({ file: "parser", isLogging: isDebuggingEnabled() });
 
-/**
- * parseNodeModuleCachePath
- * @description a convenience function to parse modules
- * @param {string} modulePath
- * @param {string} cachePath
- * @returns {string}
- */
+export const getPackageNameVersionFromUrl = (url: string) => {
+  try {
+    const file = getLastPart(url, "/");
+    const urlParts = url?.split("@");
+    const urlPartsCount = urlParts.length;
+    if (urlPartsCount === 3) {
+      const name = `@${urlParts[1]}`;
+      const version = getVersion(urlParts)(2);
+      return { file, name, version };
+    }
+    const name = getLastPart(getLastPart(urlParts[0], "/"), ":");
+    const version = getVersion(urlParts)(1);
+    return { file, name, version };
+  } catch (err) {
+    log.error(`getPackageNameVersionFromUrl: ${err}`, {});
+    return {};
+  }
+};
+
 export const parseNodeModuleCachePath = async (modulePath: string, cachePath: string) => {
   log.debug("parseNodeModuleCachePath", cachePath, modulePath);
   if (existsSync(cachePath)) return cachePath;

@@ -1,15 +1,3 @@
-jest.mock("node-fetch", () =>
-  jest.fn().mockResolvedValue({
-    ok: true,
-    text: jest.fn().mockResolvedValue("module code"),
-  })
-);
-
-jest.mock("@jspm/generator", () => ({
-  parseUrlPkg: jest.fn(),
-}));
-
-
 jest.mock("@jspm/import-map", () => ({
   ImportMap: jest.fn(() => ({
     resolve: jest.fn(),
@@ -47,9 +35,11 @@ describe('loader', () => {
   })
 
   test("resolved with basic config", async () => {
+    const resolveModulePathSpy = jest.spyOn(utils, 'resolveModulePath').mockReturnValue('modulePath');
     const checkIfNodeOrFileProtocolSpy = jest.spyOn(utils, 'checkIfNodeOrFileProtocol').mockReturnValue(true);
     const context = { parentURL: "parentURL" };
     await resolve(specifier, context, nextResolve);
+    expect(resolveModulePathSpy).toHaveBeenCalledWith(specifier, context.parentURL);
     expect(checkIfNodeOrFileProtocolSpy).toHaveBeenCalled();
     expect(nextResolve).toHaveBeenCalledWith('specifier');
   });

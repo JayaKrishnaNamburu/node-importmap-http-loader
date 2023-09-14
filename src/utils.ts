@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { parseUrlPkg } from "@jspm/generator";
-import { parseNodeModuleCachePath } from "./parser";
+import { parseNodeModuleCachePath, getPackageNameVersionFromUrl } from "./parser";
 import { cache, importmap, isDebuggingEnabled } from "./config";
 import { logger } from "./logger";
 
@@ -61,11 +60,8 @@ export const resolveModulePath = (specifier: string, cacheMapPath: string): stri
 
 export const resolveNodeModuleCachePath = async (modulePath: string) => {
   try {
-    const moduleMetadata = await parseUrlPkg(modulePath);
-    const name = moduleMetadata?.pkg?.name;
-    const version = moduleMetadata?.pkg?.version;
-    const moduleFile = modulePath.split("/").reverse()[0] || "";
-    const nodeModuleCachePath = join(cache, `${name}@${version}`, moduleFile);
+    const { name, version, file = "" } = getPackageNameVersionFromUrl(modulePath);
+    const nodeModuleCachePath = join(cache, `${name}@${version}`, file);
     log.debug("resolveNodeModuleCachePath:", { nodeModuleCachePath });
     return nodeModuleCachePath;
   } catch (err) {
@@ -84,3 +80,8 @@ export const resolveParsedModulePath = async (modulePath: string, nodeModuleCach
     return;
   }
 };
+
+export const getVersion = (urlParts: string[]) => (index: number) => urlParts?.[index]?.split("/")?.[0] || "";
+
+export const getLastPart = (part: string, char: string) =>
+  (part?.length && char && part?.split(char)?.reverse()[0]) || "";
